@@ -1,8 +1,11 @@
 import { BrowserWindow } from 'electron'
 import { nanoid } from 'nanoid'
+import fs from 'fs'
+import path from 'path'
 import { spawnClaudeAgent, sendToAgent, killAgent } from './claude'
 import { CommandExecutor } from './command-executor'
-import { createTweeb, updateTweeb, createMessage, updateProject } from '../db'
+import { createTweeb, updateTweeb, createMessage, updateProject, getTweebsByProject } from '../db'
+import { notifyDecisionNeeded, notifyProjectComplete } from '../notifications'
 import type { AgentProcess } from './types'
 import type { StreamMessage, Message, Tweeb } from '@shared/types'
 
@@ -17,16 +20,32 @@ const ROLE_CONFIG: Record<string, { displayName: string; avatarColor: string }> 
   sdet: { displayName: 'SDET', avatarColor: 'pink' }
 }
 
+// Rate limit retry backoff schedule (ms)
+const RETRY_DELAYS = [30_000, 60_000, 120_000, 300_000, 600_000]
+
+interface RetryState {
+  attempt: number
+  timer: NodeJS.Timeout | null
+  options: {
+    projectId: string
+    workingDir: string
+    role: string
+    taskPrompt: string
+    systemPrompt: string
+  }
+}
+
 export class TweebManager {
   private agents: Map<string, AgentProcess> = new Map()
-  private pmAgents: Map<string, AgentProcess> = new Map() // projectId -> PM agent
+  private pmAgents: Map<string, AgentProcess> = new Map()
+  private retryStates: Map<string, RetryState> = new Map()
+  private progressPoller: NodeJS.Timeout | null = null
 
   spawnPM(projectId: string, workingDir: string, initialPrompt: string, systemPrompt: string, sessionId?: string): string {
     const tweebId = nanoid()
     const now = Date.now()
     const config = ROLE_CONFIG['pm']
 
-    // Create tweeb record in DB
     const tweeb: Tweeb = {
       id: tweebId,
       project_id: projectId,
@@ -56,7 +75,6 @@ export class TweebManager {
       onMessage: (msg) => {
         this.handlePMMessage(projectId, tweebId, msg)
 
-        // Check for session ID in system messages
         if (msg.type === 'system' && msg.content.startsWith('session:')) {
           const sid = msg.content.replace('session:', '')
           updateProject(projectId, { pm_session_id: sid })
@@ -64,7 +82,6 @@ export class TweebManager {
         }
       },
       onExit: (code) => {
-        // Parse PM commands from accumulated text and save visible message
         if (textAccumulator.trim()) {
           const executor = new CommandExecutor(projectId, workingDir)
           const { visibleText } = executor.extractAndExecute(textAccumulator)
@@ -89,7 +106,6 @@ export class TweebManager {
       }
     })
 
-    // Track PID
     if (agent.process.pid) {
       updateTweeb(tweebId, { pid: agent.process.pid })
     }
@@ -97,6 +113,7 @@ export class TweebManager {
     this.agents.set(tweebId, agent)
     this.pmAgents.set(projectId, agent)
     this.sendTweebStatus(projectId, tweebId)
+    this.startProgressPoller()
 
     return tweebId
   }
@@ -126,6 +143,75 @@ export class TweebManager {
     }
     createTweeb(tweeb)
 
+    let rateLimited = false
+
+    const agent = spawnClaudeAgent({
+      id: tweebId,
+      role,
+      projectId,
+      workingDir,
+      prompt: taskPrompt,
+      systemPrompt,
+      onMessage: (msg) => {
+        if (msg.type === 'error' && msg.content.includes('Rate limit')) {
+          rateLimited = true
+          updateTweeb(tweebId, { status: 'rate_limited' })
+          this.sendTweebStatus(projectId, tweebId)
+        }
+      },
+      onExit: (code) => {
+        this.agents.delete(tweebId)
+
+        // If rate limited, schedule retry with exponential backoff
+        if (rateLimited || code !== 0) {
+          const existing = this.retryStates.get(tweebId)
+          const attempt = existing ? existing.attempt + 1 : 0
+
+          if (attempt < RETRY_DELAYS.length) {
+            const delay = RETRY_DELAYS[attempt]
+            console.log(`[TweebManager] Retrying ${tweebId} in ${delay / 1000}s (attempt ${attempt + 1})`)
+
+            updateTweeb(tweebId, { status: 'rate_limited' })
+            this.sendTweebStatus(projectId, tweebId)
+
+            const timer = setTimeout(() => {
+              this.retryStates.delete(tweebId)
+              // Re-spawn with same params
+              this.agents.delete(tweebId)
+              this.spawnWorkerRetry(tweebId, projectId, workingDir, role, taskPrompt, systemPrompt, attempt)
+            }, delay)
+
+            this.retryStates.set(tweebId, {
+              attempt,
+              timer,
+              options: { projectId, workingDir, role, taskPrompt, systemPrompt }
+            })
+          } else {
+            // Max retries exhausted
+            updateTweeb(tweebId, { status: 'error', pid: null })
+            this.sendTweebStatus(projectId, tweebId)
+          }
+        } else {
+          updateTweeb(tweebId, { status: 'done', pid: null })
+          this.sendTweebStatus(projectId, tweebId)
+        }
+      }
+    })
+
+    if (agent.process.pid) {
+      updateTweeb(tweebId, { pid: agent.process.pid })
+    }
+
+    this.agents.set(tweebId, agent)
+    this.sendTweebStatus(projectId, tweebId)
+
+    return tweebId
+  }
+
+  private spawnWorkerRetry(tweebId: string, projectId: string, workingDir: string, role: string, taskPrompt: string, systemPrompt: string, _attempt: number): void {
+    updateTweeb(tweebId, { status: 'working' })
+    this.sendTweebStatus(projectId, tweebId)
+
     const agent = spawnClaudeAgent({
       id: tweebId,
       role,
@@ -154,9 +240,6 @@ export class TweebManager {
     }
 
     this.agents.set(tweebId, agent)
-    this.sendTweebStatus(projectId, tweebId)
-
-    return tweebId
   }
 
   killTweeb(tweebId: string): void {
@@ -164,9 +247,26 @@ export class TweebManager {
     if (agent) {
       killAgent(agent)
     }
+    // Cancel any pending retry
+    const retry = this.retryStates.get(tweebId)
+    if (retry?.timer) {
+      clearTimeout(retry.timer)
+      this.retryStates.delete(tweebId)
+    }
   }
 
   killAll(): void {
+    // Stop progress poller
+    if (this.progressPoller) {
+      clearInterval(this.progressPoller)
+      this.progressPoller = null
+    }
+    // Cancel all retries
+    for (const [id, retry] of this.retryStates.entries()) {
+      if (retry.timer) clearTimeout(retry.timer)
+      this.retryStates.delete(id)
+    }
+    // Kill all agents
     for (const agent of this.agents.values()) {
       killAgent(agent)
     }
@@ -178,17 +278,74 @@ export class TweebManager {
     return this.agents.get(tweebId)
   }
 
+  // === Progress Polling ===
+
+  private startProgressPoller(): void {
+    if (this.progressPoller) return
+
+    this.progressPoller = setInterval(() => {
+      this.pollProgress()
+    }, 5000)
+  }
+
+  private pollProgress(): void {
+    // Check each active agent's project for progress files
+    const projectIds = new Set<string>()
+    for (const agent of this.agents.values()) {
+      projectIds.add(agent.projectId)
+    }
+
+    for (const projectId of projectIds) {
+      // Find project working dir from any agent
+      const agent = Array.from(this.agents.values()).find((a) => a.projectId === projectId)
+      if (!agent) continue
+
+      // Read progress files from .tweebs/progress/
+      const { getProject } = require('../db')
+      const project = getProject(projectId)
+      if (!project) continue
+
+      const progressDir = path.join(project.project_path, '.tweebs', 'progress')
+      if (!fs.existsSync(progressDir)) continue
+
+      try {
+        const files = fs.readdirSync(progressDir).filter((f: string) => f.endsWith('.json'))
+        for (const file of files) {
+          const content = fs.readFileSync(path.join(progressDir, file), 'utf-8')
+          try {
+            const progress = JSON.parse(content)
+            if (progress.tweebId && progress.status) {
+              const currentTweeb = getTweebsByProject(projectId).find((t: Tweeb) => t.id === progress.tweebId)
+              if (currentTweeb && currentTweeb.status !== progress.status) {
+                updateTweeb(progress.tweebId, { status: progress.status })
+                this.sendTweebStatus(projectId, progress.tweebId)
+              }
+            }
+          } catch {
+            // Invalid progress file, skip
+          }
+        }
+      } catch {
+        // Progress dir read error, skip
+      }
+    }
+
+    // Stop polling if no active agents
+    if (this.agents.size === 0 && this.progressPoller) {
+      clearInterval(this.progressPoller)
+      this.progressPoller = null
+    }
+  }
+
+  // === Internal ===
+
   private handlePMMessage(_projectId: string, _tweebId: string, msg: StreamMessage): void {
-    // Phase 6 adds command parsing here
     if (msg.type === 'text') {
-      // For now, just log. Phase 6 will parse commands from this text.
       console.log(`[PM] text chunk: ${msg.content.slice(0, 100)}`)
     }
   }
 
   private sendTweebStatus(projectId: string, tweebId: string): void {
-    // Re-read from DB to get latest
-    const { getTweebsByProject } = require('../db')
     const tweebs = getTweebsByProject(projectId)
     const tweeb = tweebs.find((t: Tweeb) => t.id === tweebId)
     if (tweeb) {

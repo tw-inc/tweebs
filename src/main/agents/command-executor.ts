@@ -10,6 +10,7 @@ import {
   createMessage
 } from '../db'
 import { tweebManager } from './manager'
+import { notifyDecisionNeeded, notifyProjectComplete } from '../notifications'
 import type { PMCommand, Ticket, Message } from '@shared/types'
 
 export class CommandExecutor {
@@ -163,6 +164,7 @@ export class CommandExecutor {
       question: cmd.question,
       options: cmd.options
     })
+    notifyDecisionNeeded(cmd.question)
   }
 
   private handleMarkComplete(cmd: Extract<PMCommand, { cmd: 'mark_complete' }>): void {
@@ -178,6 +180,7 @@ export class CommandExecutor {
     createMessage(msg)
     this.sendToRenderer('chat:message', msg)
     this.sendToRenderer('project:status', { projectId: this.projectId, status: 'completed' })
+    notifyProjectComplete(cmd.summary)
   }
 
   private sendBoardUpdate(): void {
