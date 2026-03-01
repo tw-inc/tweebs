@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useChatStore } from '../stores/chatStore'
+import { useBoardStore } from '../stores/boardStore'
 import ChatView from './Chat/ChatView'
+import BoardView from './Board/BoardView'
 import type { Project, Ticket, Message, Tweeb } from '@shared/types'
 
 interface ProjectData {
@@ -12,16 +14,23 @@ interface ProjectData {
 
 export default function ProjectView({ projectId, onBack }: { projectId: string; onBack: () => void }) {
   const [data, setData] = useState<ProjectData | null>(null)
-  const { setMessages, clear } = useChatStore()
+  const { setMessages, clear: clearChat } = useChatStore()
+  const { setTickets, setTweebs, clear: clearBoard } = useBoardStore()
 
   useEffect(() => {
-    clear()
+    clearChat()
+    clearBoard()
     window.api.projects.get(projectId).then((d) => {
       setData(d)
       setMessages(d.messages)
+      setTickets(d.tickets)
+      setTweebs(d.tweebs)
     })
-    return () => clear()
-  }, [projectId, setMessages, clear])
+    return () => {
+      clearChat()
+      clearBoard()
+    }
+  }, [projectId, setMessages, setTickets, setTweebs, clearChat, clearBoard])
 
   if (!data) {
     return (
@@ -42,7 +51,7 @@ export default function ProjectView({ projectId, onBack }: { projectId: string; 
           <ChatView projectId={projectId} />
         </div>
         <div className="project-view-board">
-          <div className="placeholder-text">Board panel — Phase 4</div>
+          <BoardView projectId={projectId} />
         </div>
       </div>
     </div>

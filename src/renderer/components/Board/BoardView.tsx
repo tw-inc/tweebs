@@ -1,0 +1,52 @@
+import { useEffect } from 'react'
+import { useBoardStore } from '../../stores/boardStore'
+import Column from './Column'
+import TicketDetail from './TicketDetail'
+import type { Ticket, Tweeb, TicketColumn } from '@shared/types'
+
+const COLUMNS: TicketColumn[] = ['backlog', 'in_progress', 'done']
+
+export default function BoardView({ projectId }: { projectId: string }) {
+  const { tickets, tweebs, selectedTicketId, updateTickets, updateTweeb, selectTicket } =
+    useBoardStore()
+
+  // Listen for board updates from main process
+  useEffect(() => {
+    const unsubBoard = window.api.board.onUpdate((newTickets) => {
+      updateTickets(newTickets as Ticket[])
+    })
+    const unsubTweeb = window.api.tweeb.onStatus((tweeb) => {
+      updateTweeb(tweeb as Tweeb)
+    })
+    return () => {
+      unsubBoard()
+      unsubTweeb()
+    }
+  }, [updateTickets, updateTweeb])
+
+  const selectedTicket = tickets.find((t) => t.id === selectedTicketId)
+
+  return (
+    <div className="board-view">
+      <div className="board-columns">
+        {COLUMNS.map((col) => (
+          <Column
+            key={col}
+            column={col}
+            tickets={tickets.filter((t) => t.column_name === col)}
+            tweebs={tweebs}
+            onCardClick={selectTicket}
+          />
+        ))}
+      </div>
+
+      {selectedTicket && (
+        <TicketDetail
+          ticket={selectedTicket}
+          tweebs={tweebs}
+          onClose={() => selectTicket(null)}
+        />
+      )}
+    </div>
+  )
+}
