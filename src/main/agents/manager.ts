@@ -1,6 +1,7 @@
 import { BrowserWindow } from 'electron'
 import { nanoid } from 'nanoid'
 import { spawnClaudeAgent, sendToAgent, killAgent } from './claude'
+import { CommandExecutor } from './command-executor'
 import { createTweeb, updateTweeb, createMessage, updateProject } from '../db'
 import type { AgentProcess } from './types'
 import type { StreamMessage, Message, Tweeb } from '@shared/types'
@@ -63,17 +64,22 @@ export class TweebManager {
         }
       },
       onExit: (code) => {
-        // Save accumulated PM response as a message
+        // Parse PM commands from accumulated text and save visible message
         if (textAccumulator.trim()) {
-          const pmMsg: Message = {
-            id: nanoid(),
-            project_id: projectId,
-            role: 'pm',
-            content: textAccumulator.trim(),
-            created_at: Date.now()
+          const executor = new CommandExecutor(projectId, workingDir)
+          const { visibleText } = executor.extractAndExecute(textAccumulator)
+
+          if (visibleText) {
+            const pmMsg: Message = {
+              id: nanoid(),
+              project_id: projectId,
+              role: 'pm',
+              content: visibleText,
+              created_at: Date.now()
+            }
+            createMessage(pmMsg)
+            this.sendToRenderer('chat:message', pmMsg)
           }
-          createMessage(pmMsg)
-          this.sendToRenderer('chat:message', pmMsg)
         }
 
         updateTweeb(tweebId, { status: code === 0 ? 'idle' : 'error', pid: null })
