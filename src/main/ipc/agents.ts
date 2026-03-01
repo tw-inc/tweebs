@@ -1,7 +1,14 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { nanoid } from 'nanoid'
-import { createMessage } from '../db'
+import fs from 'fs'
+import path from 'path'
+import { createMessage, getProject } from '../db'
+import { tweebManager } from '../agents/manager'
 import type { Message } from '@shared/types'
+
+// Default PM system prompt (Phase 6 will load from prompts/pm.md)
+const DEFAULT_PM_PROMPT = `You are a project manager AI. You help users build software projects.
+Be concise and helpful. When the user describes what they want to build, break it into tasks and explain your plan.`
 
 export function registerAgentHandlers(): void {
   ipcMain.handle('chat:send', async (_event, projectId: string, content: string) => {
@@ -23,39 +30,28 @@ export function registerAgentHandlers(): void {
       win.webContents.send('chat:message', userMsg)
     }
 
-    // Mock PM response (Phase 5 replaces this with real CLI)
-    setTimeout(() => {
-      const pmMsg: Message = {
-        id: nanoid(),
-        project_id: projectId,
-        role: 'pm',
-        content: getMockResponse(content),
-        created_at: Date.now()
-      }
-      createMessage(pmMsg)
+    // Get project info
+    const project = getProject(projectId)
+    if (!project) return
 
-      const win = BrowserWindow.getAllWindows()[0]
-      if (win) {
-        win.webContents.send('chat:message', pmMsg)
-      }
-    }, 800)
+    // Load PM system prompt if available
+    let systemPrompt = DEFAULT_PM_PROMPT
+    const promptPath = path.join(process.cwd(), 'prompts', 'pm.md')
+    if (fs.existsSync(promptPath)) {
+      systemPrompt = fs.readFileSync(promptPath, 'utf-8')
+    }
+
+    // Spawn PM or send message to existing PM
+    tweebManager.spawnPM(
+      projectId,
+      project.project_path,
+      content,
+      systemPrompt,
+      project.pm_session_id || undefined
+    )
   })
 
-  ipcMain.handle('decision:respond', async (_event, _projectId: string, _choice: string) => {
-    // Stub — Phase 6 wires this to PM stdin
+  ipcMain.handle('decision:respond', async (_event, projectId: string, choice: string) => {
+    tweebManager.sendToPM(projectId, choice)
   })
-}
-
-function getMockResponse(userMessage: string): string {
-  const lower = userMessage.toLowerCase()
-  if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
-    return "Hey. I'm your PM. Tell me what you want to build and I'll get the team on it."
-  }
-  if (lower.includes('website') || lower.includes('portfolio') || lower.includes('site')) {
-    return "Got it. I'll scope out a plan for your site. Give me a minute to break this into tickets and assign the team."
-  }
-  if (lower.includes('app')) {
-    return "An app. Sure. Let me figure out the architecture and get tickets created. The team will start shortly."
-  }
-  return "Noted. Let me think about the best approach and get the team moving on this."
 }
