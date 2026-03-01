@@ -1,0 +1,109 @@
+{
+  "id": "ios-app",
+  "name": "Build an iOS App",
+  "description": "A native iOS application using SwiftUI",
+  "version": "1.0",
+
+  "dependencies": {
+    "universal": {
+      "note": "These are installed during onboarding, not per-blueprint",
+      "list": ["node", "git", "gh", "claude|codex"]
+    },
+    "blueprint": [
+      {
+        "name": "Xcode",
+        "check": "xcode-select -p",
+        "versionCheck": "xcodebuild -version",
+        "minVersion": "15.0",
+        "install": null,
+        "blocker": true,
+        "blockerMessage": "iOS development requires Xcode, which can only be installed from the App Store.",
+        "blockerLink": "macappstore://itunes.apple.com/app/xcode/id497799835"
+      },
+      {
+        "name": "CocoaPods",
+        "check": "which pod",
+        "versionCheck": "pod --version",
+        "install": "sudo gem install cocoapods",
+        "blocker": false
+      },
+      {
+        "name": "iOS Simulator",
+        "check": "xcrun simctl list devices | grep -q 'iPhone'",
+        "install": "xcodebuild -downloadPlatform iOS",
+        "blocker": false,
+        "note": "Downloaded automatically if Xcode is installed but simulator runtimes are missing"
+      }
+    ]
+  },
+
+  "blockers": [
+    {
+      "name": "Xcode",
+      "reason": "Cannot auto-install — requires App Store",
+      "resolution": "Install Xcode from the App Store, then relaunch TWEEBS"
+    }
+  ],
+
+  "authRequirements": [
+    {
+      "name": "Apple Developer Account",
+      "required": false,
+      "note": "Only needed for deploying to the App Store or testing on a physical device. Simulator testing works without it.",
+      "enrollUrl": "https://developer.apple.com/programs/enroll/"
+    }
+  ],
+
+  "mcpConfigs": [],
+
+  "tweebRoles": ["pm", "architect", "ux-designer", "mobile-engineer"],
+
+  "scaffolding": {
+    "stack": "SwiftUI + Swift 5.9+ + Xcode project",
+    "commands": [
+      "mkdir -p {project-name} && cd {project-name}",
+      "swift package init --type executable --name {project-name}"
+    ],
+    "postScaffold": [
+      "Create Xcode project structure with SwiftUI App lifecycle",
+      "Set up basic ContentView.swift",
+      "Configure Info.plist with app metadata"
+    ],
+    "note": "Xcode project creation may be handled by the mobile-engineer Tweeb directly since swift package init doesn't create a full iOS app structure. The Tweeb will use xcodebuild or create the .xcodeproj manually."
+  },
+
+  "initialContext": "The user wants to build an iOS app. Ask what the app does (one sentence), who it's for, and the 2-3 most important screens. Don't ask about technical details — the architect will handle those. Then hand off to architect for app architecture, designer for UI/UX, and mobile engineer for implementation.",
+
+  "ticketTemplate": [
+    {
+      "title": "App architecture and data model",
+      "assignTo": "architect",
+      "dependsOn": []
+    },
+    {
+      "title": "UI design system and screen mockups",
+      "assignTo": "ux-designer",
+      "dependsOn": []
+    },
+    {
+      "title": "Project setup and navigation structure",
+      "assignTo": "mobile-engineer",
+      "dependsOn": ["App architecture and data model"]
+    },
+    {
+      "title": "Build core screens",
+      "assignTo": "mobile-engineer",
+      "dependsOn": ["UI design system and screen mockups", "Project setup and navigation structure"]
+    },
+    {
+      "title": "Data persistence and state management",
+      "assignTo": "mobile-engineer",
+      "dependsOn": ["Build core screens"]
+    },
+    {
+      "title": "Polish and simulator testing",
+      "assignTo": "mobile-engineer",
+      "dependsOn": ["Data persistence and state management"]
+    }
+  ]
+}

@@ -1,0 +1,149 @@
+{
+  "id": "shopify-store",
+  "name": "Build a Shopify Store",
+  "description": "A custom Shopify storefront — theme customization or a full Hydrogen headless storefront",
+  "version": "1.0",
+
+  "dependencies": {
+    "universal": {
+      "note": "These are installed during onboarding, not per-blueprint",
+      "list": ["node", "git", "gh", "claude|codex"]
+    },
+    "blueprint": [
+      {
+        "name": "Shopify CLI",
+        "check": "which shopify",
+        "versionCheck": "shopify version",
+        "install": "npm install -g @shopify/cli @shopify/theme",
+        "blocker": false
+      },
+      {
+        "name": "Ruby",
+        "check": "which ruby",
+        "versionCheck": "ruby --version",
+        "minVersion": "3.0",
+        "install": "brew install ruby",
+        "blocker": false,
+        "note": "Needed for Shopify theme development (Liquid template engine). macOS ships with Ruby but it may be outdated."
+      }
+    ]
+  },
+
+  "blockers": [
+    {
+      "name": "Shopify Account",
+      "reason": "You need a Shopify store to develop against — either a live store or a free development store",
+      "resolution": "Create a free Shopify Partners account and set up a development store",
+      "note": "TWEEBS will guide you through this"
+    }
+  ],
+
+  "authRequirements": [
+    {
+      "name": "Shopify Partners Account",
+      "required": true,
+      "note": "Free to create. Gives you unlimited development stores for testing. No credit card needed.",
+      "enrollUrl": "https://www.shopify.com/partners",
+      "authFlow": [
+        "Create a Shopify Partners account at shopify.com/partners",
+        "Create a development store from the Partners dashboard",
+        "Run 'shopify auth login' to connect the CLI to your account",
+        "TWEEBS verifies auth with 'shopify auth status'"
+      ]
+    }
+  ],
+
+  "mcpConfigs": [
+    {
+      "name": "chrome-devtools",
+      "package": "@anthropic-ai/chrome-devtools-mcp",
+      "transport": "stdio",
+      "assignTo": ["frontend-engineer"],
+      "userNotice": "Chrome will open with your Shopify preview so the team can see the store as they build it. No action needed."
+    }
+  ],
+
+  "tweebRoles": ["pm", "architect", "ux-designer", "frontend-engineer", "backend-engineer"],
+
+  "approachSelection": {
+    "note": "The PM asks the user what they need and the architect decides the approach",
+    "approaches": {
+      "theme-customization": {
+        "description": "Customize an existing Shopify theme using Liquid, CSS, and JavaScript",
+        "bestFor": "Users who want a standard Shopify store with custom branding and layout tweaks",
+        "stack": "Shopify Dawn theme + Liquid + CSS + vanilla JS",
+        "scaffolding": {
+          "commands": [
+            "shopify theme init {project-name}",
+            "cd {project-name}"
+          ]
+        },
+        "roles": ["pm", "architect", "ux-designer", "frontend-engineer"]
+      },
+      "hydrogen-storefront": {
+        "description": "Build a fully custom headless storefront with Hydrogen (Shopify's React framework)",
+        "bestFor": "Users who want a completely custom shopping experience, unique interactions, or advanced performance",
+        "stack": "Hydrogen + Remix + React + TypeScript",
+        "scaffolding": {
+          "commands": [
+            "npx create-hydrogen@latest {project-name}",
+            "cd {project-name} && npm install"
+          ]
+        },
+        "roles": ["pm", "architect", "ux-designer", "frontend-engineer", "backend-engineer"]
+      },
+      "shopify-app": {
+        "description": "Build a Shopify app that adds functionality to the Shopify admin or storefront",
+        "bestFor": "Users who want to add custom features to Shopify (custom discount logic, integrations, admin tools)",
+        "stack": "Shopify App + Remix + React + Prisma + TypeScript",
+        "scaffolding": {
+          "commands": [
+            "shopify app init --template remix --name {project-name}",
+            "cd {project-name} && npm install"
+          ]
+        },
+        "roles": ["pm", "architect", "ux-designer", "frontend-engineer", "backend-engineer"]
+      }
+    }
+  },
+
+  "initialContext": "The user wants to build something with Shopify. Figure out what: Do they want a custom online store (theme customization or headless Hydrogen), or a Shopify app that adds functionality? Ask in plain language — 'Do you want to build a store or add features to an existing store?' and 'How custom does it need to be — branded tweaks to a template, or something completely unique?' The architect will pick the right approach based on the answer.",
+
+  "ticketTemplate": [
+    {
+      "title": "Determine approach and store architecture",
+      "assignTo": "architect",
+      "dependsOn": []
+    },
+    {
+      "title": "Store/app design system",
+      "assignTo": "ux-designer",
+      "dependsOn": ["Determine approach and store architecture"]
+    },
+    {
+      "title": "Project scaffolding and Shopify connection",
+      "assignTo": "frontend-engineer",
+      "dependsOn": ["Determine approach and store architecture"]
+    },
+    {
+      "title": "Build storefront pages / app UI",
+      "assignTo": "frontend-engineer",
+      "dependsOn": ["Store/app design system", "Project scaffolding and Shopify connection"]
+    },
+    {
+      "title": "Product data and Shopify API integration",
+      "assignTo": "backend-engineer",
+      "dependsOn": ["Project scaffolding and Shopify connection"]
+    },
+    {
+      "title": "Connect frontend to data layer",
+      "assignTo": "frontend-engineer",
+      "dependsOn": ["Build storefront pages / app UI", "Product data and Shopify API integration"]
+    },
+    {
+      "title": "Testing and store preview",
+      "assignTo": "frontend-engineer",
+      "dependsOn": ["Connect frontend to data layer"]
+    }
+  ]
+}

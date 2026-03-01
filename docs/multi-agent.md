@@ -5,22 +5,20 @@ Tweebs don't talk to each other directly. The PM writes task files, workers poll
 ## Coordination Model
 
 ```
-            PM Tweeb
-           /    |    \
-     task file  task file  task file
-         |        |         |
-     FE Tweeb  BE Tweeb  Designer Tweeb
-         |        |         |
-   progress.json  progress.json  progress.json
-         |        |         |
-         └────────┴─────────┘
-                  |
-           Main Process polls
-                  |
-            Board updates
+                    PM Tweeb
+               /    |    |    \
+          task file  |  task file  task file
+              |      |      |         |
+     Architect   Designer  FE Tweeb  BE Tweeb
+         |        |         |         |
+   progress.json  ...      ...       ...
+         |
+   architecture doc (referenced by all other Tweebs)
 ```
 
 No direct inter-agent communication. The PM is the hub. Workers are spokes.
+
+The Architect Tweeb is special — it runs first on most projects and produces an architecture document that other Tweebs reference. The PM ensures the architect's task completes before handing off implementation tasks to engineers.
 
 ## Task File Format
 

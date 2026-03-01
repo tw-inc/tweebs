@@ -1,0 +1,77 @@
+{
+  "id": "personal-website",
+  "name": "Build a Personal Website",
+  "description": "A modern personal portfolio, blog, or landing page",
+  "version": "1.0",
+
+  "dependencies": {
+    "universal": {
+      "note": "These are installed during onboarding, not per-blueprint",
+      "list": ["node", "git", "gh", "claude|codex"]
+    },
+    "blueprint": []
+  },
+
+  "blockers": [],
+
+  "authRequirements": [],
+
+  "mcpConfigs": [
+    {
+      "name": "chrome-devtools",
+      "package": "@anthropic-ai/chrome-devtools-mcp",
+      "transport": "stdio",
+      "assignTo": ["frontend"],
+      "userNotice": "You'll see a Chrome DevTools window open in the background while the frontend engineer works. No action needed from you."
+    }
+  ],
+
+  "tweebRoles": ["pm", "architect", "ux-designer", "frontend-engineer"],
+
+  "scaffolding": {
+    "stack": "Next.js 15 + Tailwind CSS 4 + TypeScript",
+    "commands": [
+      "npx create-next-app@latest {project-name} --typescript --tailwind --app --src-dir --no-import-alias",
+      "cd {project-name} && npm install"
+    ],
+    "postScaffold": [
+      "Remove boilerplate content from src/app/page.tsx",
+      "Set up basic layout shell in src/app/layout.tsx"
+    ]
+  },
+
+  "initialContext": "The user wants to build a personal website. Ask what kind (portfolio, blog, landing page), what content they have ready (bio, projects, headshot, resume), and any visual preferences (dark/light, minimal/bold, specific sites they like). Then hand off to the architect for tech decisions, designer for visual direction, and frontend engineer for implementation.",
+
+  "ticketTemplate": [
+    {
+      "title": "Design system and visual direction",
+      "assignTo": "ux-designer",
+      "dependsOn": []
+    },
+    {
+      "title": "Site architecture and page structure",
+      "assignTo": "architect",
+      "dependsOn": []
+    },
+    {
+      "title": "Build layout shell and navigation",
+      "assignTo": "frontend-engineer",
+      "dependsOn": ["Design system and visual direction", "Site architecture and page structure"]
+    },
+    {
+      "title": "Build content pages",
+      "assignTo": "frontend-engineer",
+      "dependsOn": ["Build layout shell and navigation"]
+    },
+    {
+      "title": "Responsive design and polish",
+      "assignTo": "frontend-engineer",
+      "dependsOn": ["Build content pages"]
+    },
+    {
+      "title": "Deploy to Vercel",
+      "assignTo": "frontend-engineer",
+      "dependsOn": ["Responsive design and polish"]
+    }
+  ]
+}

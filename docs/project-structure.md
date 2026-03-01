@@ -19,21 +19,27 @@ tweebs/
 │
 ├── blueprints/                  # Built-in Blueprint definitions
 │   ├── personal-website.json
-│   └── ios-app.json
+│   ├── ios-app.json
+│   ├── chrome-extension.json
+│   └── shopify-store.json
 │
-├── prompts/                     # Runtime Tweeb system prompts
-│   ├── pm.md                    # PM Tweeb personality + behavior
-│   ├── frontend.md              # Frontend engineer instructions
-│   ├── backend.md               # Backend engineer instructions
-│   ├── designer.md              # UX/UI designer instructions
-│   ├── qa.md                    # QA engineer instructions
-│   └── sdet.md                  # SDET instructions
+├── prompts/                     # Runtime Tweeb system prompts (mirrors .claude/agents/)
+│   ├── pm.md
+│   ├── architect.md
+│   ├── frontend-engineer.md
+│   ├── backend-engineer.md
+│   ├── mobile-engineer.md
+│   ├── ux-designer.md
+│   ├── qa-engineer.md
+│   └── sdet.md
 │
 ├── .claude/
 │   └── agents/                  # Dual-purpose: Claude Code dev agents + Tweeb definitions
 │       ├── pm.md
+│       ├── architect.md
 │       ├── frontend-engineer.md
 │       ├── backend-engineer.md
+│       ├── mobile-engineer.md
 │       ├── ux-designer.md
 │       ├── qa-engineer.md
 │       └── sdet.md

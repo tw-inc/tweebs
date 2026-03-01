@@ -1,0 +1,147 @@
+{
+  "id": "chrome-extension",
+  "name": "Build a Chrome Extension",
+  "description": "A Chrome browser extension using Manifest V3",
+  "version": "1.0",
+
+  "dependencies": {
+    "universal": {
+      "note": "These are installed during onboarding, not per-blueprint",
+      "list": ["node", "git", "gh", "claude|codex"]
+    },
+    "blueprint": [
+      {
+        "name": "Google Chrome",
+        "check": "ls '/Applications/Google Chrome.app' 2>/dev/null",
+        "versionCheck": "'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' --version",
+        "install": null,
+        "blocker": true,
+        "blockerMessage": "Chrome extensions need Google Chrome installed to test. Download it from google.com/chrome.",
+        "blockerLink": "https://www.google.com/chrome/"
+      }
+    ]
+  },
+
+  "blockers": [
+    {
+      "name": "Google Chrome",
+      "reason": "Cannot auto-install — user must download from google.com/chrome",
+      "resolution": "Install Google Chrome, then relaunch TWEEBS"
+    }
+  ],
+
+  "authRequirements": [
+    {
+      "name": "Chrome Web Store Developer Account",
+      "required": false,
+      "note": "Only needed for publishing. Development and testing work without it. One-time $5 registration fee.",
+      "enrollUrl": "https://chrome.google.com/webstore/devconsole/register"
+    }
+  ],
+
+  "mcpConfigs": [
+    {
+      "name": "chrome-devtools",
+      "package": "@anthropic-ai/chrome-devtools-mcp",
+      "transport": "stdio",
+      "assignTo": ["frontend-engineer"],
+      "userNotice": "Chrome will open in the background so the frontend engineer can test the extension. You'll see it load automatically — no action needed."
+    }
+  ],
+
+  "tweebRoles": ["pm", "architect", "ux-designer", "frontend-engineer"],
+
+  "scaffolding": {
+    "stack": "Manifest V3 + TypeScript + Vite (CRXJS)",
+    "commands": [
+      "npm create vite@latest {project-name} -- --template react-ts",
+      "cd {project-name} && npm install @crxjs/vite-plugin@latest",
+      "cd {project-name} && npm install"
+    ],
+    "postScaffold": [
+      "Create manifest.json with Manifest V3 structure",
+      "Configure vite.config.ts with CRXJS plugin",
+      "Set up extension entry points: popup, background service worker, content scripts",
+      "Add Chrome extension TypeScript types"
+    ]
+  },
+
+  "initialContext": "The user wants to build a Chrome extension. Ask what it does in one sentence and which part of the browser it interacts with — does it add a popup, modify pages the user visits, add a sidebar, or work in the background? This determines the extension's architecture (popup, content script, background service worker, side panel, or combination). Then hand off to architect for extension architecture, designer for popup/UI design, and frontend engineer for implementation.",
+
+  "extensionArchitectureGuide": {
+    "components": {
+      "popup": {
+        "description": "Small UI that opens when user clicks the extension icon in the toolbar",
+        "files": ["src/popup/Popup.tsx", "src/popup/index.html"],
+        "useWhen": "Extension needs a quick settings panel, dashboard, or action trigger"
+      },
+      "contentScript": {
+        "description": "JavaScript that runs in the context of web pages the user visits",
+        "files": ["src/content/index.ts"],
+        "useWhen": "Extension needs to read or modify web pages (highlight text, add buttons, scrape data)"
+      },
+      "backgroundServiceWorker": {
+        "description": "Persistent background script that handles events and manages extension state",
+        "files": ["src/background/index.ts"],
+        "useWhen": "Extension needs to handle alarms, intercept network requests, manage cross-tab state"
+      },
+      "sidePanel": {
+        "description": "Panel that opens alongside the page content",
+        "files": ["src/sidepanel/SidePanel.tsx", "src/sidepanel/index.html"],
+        "useWhen": "Extension needs a persistent, larger UI alongside the page"
+      },
+      "optionsPage": {
+        "description": "Full settings page for the extension",
+        "files": ["src/options/Options.tsx", "src/options/index.html"],
+        "useWhen": "Extension has user-configurable settings"
+      }
+    },
+    "permissions": {
+      "note": "The architect Tweeb determines which Chrome permissions are needed based on the extension's functionality and includes only the minimum required set in manifest.json"
+    }
+  },
+
+  "testingStrategy": {
+    "loadUnpacked": [
+      "Build the extension: npm run build",
+      "Open chrome://extensions in Chrome",
+      "Enable Developer Mode",
+      "Click 'Load unpacked' and select the dist/ folder"
+    ],
+    "automation": "Chrome DevTools MCP can inspect the popup and content script output. The frontend engineer Tweeb loads the extension, tests it, and iterates.",
+    "hotReload": "CRXJS Vite plugin supports HMR — changes to the extension code hot-reload in Chrome during development"
+  },
+
+  "ticketTemplate": [
+    {
+      "title": "Extension architecture and manifest design",
+      "assignTo": "architect",
+      "dependsOn": []
+    },
+    {
+      "title": "Popup/UI design",
+      "assignTo": "ux-designer",
+      "dependsOn": []
+    },
+    {
+      "title": "Project scaffolding and manifest.json",
+      "assignTo": "frontend-engineer",
+      "dependsOn": ["Extension architecture and manifest design"]
+    },
+    {
+      "title": "Build core extension logic",
+      "assignTo": "frontend-engineer",
+      "dependsOn": ["Project scaffolding and manifest.json"]
+    },
+    {
+      "title": "Build popup/UI",
+      "assignTo": "frontend-engineer",
+      "dependsOn": ["Popup/UI design", "Project scaffolding and manifest.json"]
+    },
+    {
+      "title": "Integration testing in Chrome",
+      "assignTo": "frontend-engineer",
+      "dependsOn": ["Build core extension logic", "Build popup/UI"]
+    }
+  ]
+}
