@@ -1,74 +1,85 @@
 # Notifications & Voice
 
-## SMS Notifications
+## V1: Native macOS Notifications
 
-When the PM needs a decision from the user and they're not looking at the app.
+When the PM needs a decision and the user isn't looking at the app.
 
-### Setup
-- User provides phone number in Settings (optional)
-- Stored in SQLite settings table
-- Twilio account configured server-side (TWEEBS uses a shared Twilio number, or user provides their own)
+### How it works
+- Electron's `Notification` API (built-in, no external service needed)
+- Shows a native macOS notification banner
+- Clicking the notification opens the TWEEBS app and focuses the Chat view
 
-### When to Send
-The PM triggers an SMS when:
+### When to notify
+The PM triggers a notification when:
 1. A worker is blocked and needs a human decision
-2. A major milestone is complete ("Your website is live")
+2. A major milestone is complete ("Your website is ready")
 3. All work is done ("Project complete")
 
-The PM does NOT send SMS for:
+The PM does NOT notify for:
 - Routine status updates
 - Non-blocking progress
-- Anything the user will see when they next glance at the board
+- Rate limit pauses (these resolve automatically)
 
-### Message Format
-Short, direct, matches PM personality:
-
+### Notification format
+Short, matches PM personality:
 ```
-TWEEBS: Need a decision — hamburger menu or sidebar nav? Reply here or open the app.
-```
-
-```
-TWEEBS: Your website is deployed. Check the app for the link.
+TWEEBS — Need a decision
+Hamburger menu or sidebar nav? Open the app to respond.
 ```
 
-### Reply Handling
-V1: SMS is one-way (notification only). User opens the app to respond.
-Future: Two-way SMS via Twilio webhooks — user can reply directly.
+```
+TWEEBS — Project complete
+Your portfolio site is ready. Open the app to see it.
+```
 
-## Voice Output (TTS)
+### Implementation
+```typescript
+// Main process — triggered by PM's request_decision command
+new Notification({
+  title: 'TWEEBS — Need a decision',
+  body: question,
+  silent: false
+}).show();
+```
 
-### Kokoro
-Local text-to-speech engine. Runs on-device, no cloud API.
+No Twilio. No phone numbers. No server-side infrastructure. Just the OS notification system.
 
-- **Voice**: Flat affect by default. Matches the PM's terse personality.
-- **Trigger**: PM messages can optionally be spoken aloud.
-- **Toggle**: User enables/disables in Settings. When enabled, new PM messages auto-play.
-- **Implementation**: Kokoro runs as a local process. Text in → audio buffer out → play via Web Audio API in renderer.
+## V2: SMS Notifications
 
-### Why Kokoro
-- Local, no API costs per TTS call
-- Fast enough for real-time playback
-- Flat/neutral voice fits the grumpy PM character
-- No privacy concerns — text never leaves the machine
+For users who want text messages when they're away from their Mac.
 
-## Voice Input
+- User provides phone number in Settings
+- Requires a Twilio integration (TWEEBS-hosted or user's own credentials)
+- This contradicts the "no cloud services" V1 principle, which is why it's V2
+- Two-way SMS (user replies to unblock) is a V2+ feature
 
-### Web Speech API
-- Built into Chromium (Electron's renderer has it)
-- Push-to-talk button in the Chat UI
-- Transcribed text sent as a normal chat message to PM
-- No additional setup needed
+## V2: Voice Output (Kokoro TTS)
 
-### Whisper (Alternative)
-- Higher accuracy, especially for technical terms
-- Runs locally via whisper.cpp or similar
-- More setup, more resources
-- Consider as an upgrade if Web Speech API accuracy is insufficient
+Local text-to-speech for the PM's messages.
 
-## Future: Animated PM Avatar
+- **Voice**: Flat affect, matches PM personality
+- **Engine**: Kokoro — runs locally, no API costs, no data leaving the machine
+- **Trigger**: Toggle in Settings. When enabled, new PM messages auto-play.
+- **Implementation**: Kokoro process → audio buffer → Web Audio API in renderer
+
+Not in V1 because:
+- Adds a native dependency that complicates Electron packaging
+- PM personality works well in text
+- Can be added without changing any architecture
+
+## V2: Voice Input
+
+Dictate messages to the PM instead of typing.
+
+- **Web Speech API**: Built into Chromium/Electron. Push-to-talk button in Chat UI.
+- **Whisper** (alternative): Higher accuracy for technical terms, runs locally via whisper.cpp
+- Transcribed text sent as a normal chat message
+
+Not in V1 — text input is sufficient.
+
+## V3: Animated PM Avatar
 
 Nano-banana (or similar) for face animation:
-- PM's avatar (blue blob with headset) gets animated mouth/eyes while speaking
+- PM's avatar gets animated mouth/eyes while speaking
 - Synced to TTS audio output
-- Makes the PM feel like a real team member
-- Not in V1 — shipped as a follow-up enhancement
+- Makes the PM feel like a character, not a chatbot

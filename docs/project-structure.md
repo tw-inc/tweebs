@@ -23,8 +23,8 @@ tweebs/
 │   ├── chrome-extension.json
 │   └── shopify-store.json
 │
-├── prompts/                     # Runtime Tweeb system prompts (mirrors .claude/agents/)
-│   ├── pm.md
+├── prompts/                     # Runtime Tweeb system prompts
+│   ├── pm.md                    # Used when spawning PM for user projects
 │   ├── architect.md
 │   ├── frontend-engineer.md
 │   ├── backend-engineer.md
@@ -34,11 +34,11 @@ tweebs/
 │   └── sdet.md
 │
 ├── .claude/
-│   └── agents/                  # Dual-purpose: Claude Code dev agents + Tweeb definitions
-│       ├── pm.md
-│       ├── architect.md
-│       ├── frontend-engineer.md
-│       ├── backend-engineer.md
+│   └── agents/                  # Dev-time Claude Code agents (for building TWEEBS itself)
+│       ├── pm.md                # TWEEBS-specific dev coordination
+│       ├── architect.md         # TWEEBS architecture decisions
+│       ├── frontend-engineer.md # TWEEBS React/Electron UI work
+│       ├── backend-engineer.md  # TWEEBS main process/SQLite work
 │       ├── mobile-engineer.md
 │       ├── ux-designer.md
 │       ├── qa-engineer.md
@@ -46,9 +46,8 @@ tweebs/
 │
 ├── scripts/                     # Onboarding shell scripts
 │   ├── detect.sh                # Check installed dependencies
-│   ├── install-node.sh          # Install Node via nvm
-│   ├── install-gh.sh            # Install GitHub CLI
-│   └── install-claude.sh        # Install Claude Code CLI
+│   ├── install-node.sh
+│   └── install-claude.sh
 │
 ├── docs/                        # Engineering specs
 │   ├── architecture.md
@@ -61,7 +60,7 @@ tweebs/
 │   ├── database.md
 │   ├── notifications-voice.md
 │   ├── dev-feedback-loop.md
-│   └── project-structure.md (this file)
+│   └── project-structure.md     # (this file)
 │
 └── src/
     ├── main/                    # Electron main process
@@ -71,26 +70,23 @@ tweebs/
     │   │   ├── projects.ts      # project:create, project:list
     │   │   └── onboarding.ts    # onboard:check, onboard:install
     │   ├── agents/              # Agent engine
-    │   │   ├── types.ts         # AgentBackend, AgentProcess interfaces
+    │   │   ├── types.ts         # AgentBackend, AgentProcess, PMCommand interfaces
     │   │   ├── claude.ts        # Claude Code CLI wrapper
-    │   │   ├── codex.ts         # OpenAI Codex CLI wrapper
-    │   │   └── manager.ts       # TweebManager (lifecycle management)
+    │   │   ├── command-executor.ts  # Parses PM commands, executes actions
+    │   │   └── manager.ts       # TweebManager (lifecycle, dispatch)
     │   ├── db/                  # Database
     │   │   ├── index.ts         # DB singleton, init, migrations
     │   │   └── schema.ts        # Table definitions
-    │   ├── github/              # GitHub CLI wrapper
-    │   │   └── index.ts         # createRepo, cloneRepo, addCollaborator
     │   ├── onboarding/          # Setup and install
     │   │   ├── detect.ts        # Check what's installed
     │   │   └── install.ts       # Run install scripts
     │   ├── blueprints/          # Blueprint engine
     │   │   └── index.ts         # Load, validate, execute blueprints
-    │   └── notifications/       # External notifications
-    │       ├── sms.ts           # Twilio SMS
-    │       └── tts.ts           # Kokoro TTS bridge
+    │   └── notifications/       # macOS notifications
+    │       └── index.ts         # Electron Notification API
     │
     ├── renderer/                # React UI
-    │   ├── index.html           # HTML entry point
+    │   ├── index.html
     │   ├── main.tsx             # React root
     │   ├── App.tsx              # Router / layout
     │   ├── components/
@@ -104,28 +100,45 @@ tweebs/
     │   │   │   └── Card.tsx
     │   │   ├── Onboarding/      # Setup wizard
     │   │   │   ├── WelcomeStep.tsx
-    │   │   │   ├── SubscriptionStep.tsx
     │   │   │   ├── InstallStep.tsx
     │   │   │   ├── AuthStep.tsx
     │   │   │   └── DisclaimerStep.tsx
-    │   │   ├── ProjectCreate/   # New project flow
+    │   │   ├── ProjectCreate/
     │   │   │   └── NewProjectView.tsx
     │   │   └── Settings/
     │   │       └── SettingsView.tsx
     │   ├── stores/              # Zustand state management
-    │   │   ├── chatStore.ts     # Messages, send/receive
-    │   │   ├── boardStore.ts    # Tickets, columns
-    │   │   ├── projectStore.ts  # Current project, list
-    │   │   └── appStore.ts      # Onboarding state, settings
+    │   │   ├── chatStore.ts
+    │   │   ├── boardStore.ts
+    │   │   ├── projectStore.ts
+    │   │   └── appStore.ts
     │   └── styles/
     │       └── global.css
     │
     ├── shared/                  # Types shared between main + renderer
-    │   └── types.ts             # Project, Tweeb, Ticket, Message types
+    │   └── types.ts
     │
-    └── preload/                 # Electron preload scripts
+    └── preload/
         └── index.ts             # contextBridge API exposure
 ```
+
+## Dev-Time vs Runtime Agent Files
+
+These are separate and serve different purposes:
+
+### `.claude/agents/` — Dev-time (building TWEEBS itself)
+Claude Code picks these up as custom agents when working on the TWEEBS codebase. They contain TWEEBS-specific instructions:
+- The frontend-engineer agent knows about Electron, electron-vite, the project structure
+- The architect agent knows about the TWEEBS system design in `docs/`
+- The QA agent knows about Vitest, Playwright, and TWEEBS test patterns
+
+### `prompts/` — Runtime (user projects)
+These are loaded by the TweebManager when spawning Tweebs for user projects. They contain generic role instructions:
+- The frontend-engineer prompt knows how to build React/Next.js/etc. projects in general
+- The architect prompt knows how to make technology decisions for arbitrary projects
+- The QA prompt knows how to test any codebase
+
+The dev-time agents reference TWEEBS internals. The runtime prompts are project-agnostic.
 
 ## Build Tooling
 
@@ -147,14 +160,19 @@ Config: `electron.vite.config.ts`
 | `react`, `react-dom` | UI framework |
 | `zustand` | State management |
 | `better-sqlite3` | Database |
-| `@anthropic-ai/electron-mcp-server` | Dev feedback loop |
 
-## Dual-Purpose Agent Files
+## User Project Structure (on disk)
 
-The `.claude/agents/` directory serves two purposes:
+When a user creates a project, TWEEBS creates:
 
-1. **Dev-time**: Claude Code picks these up as custom agents when working on TWEEBS. The "frontend-engineer" agent helps Claude Code build TWEEBS' own frontend. The "qa-engineer" agent helps test TWEEBS itself.
-
-2. **Runtime**: The TWEEBS app reads these same files to define Tweeb behavior when spawning worker agents for user projects. The system prompt for each Tweeb role is defined here.
-
-This means improving a Tweeb's behavior (editing its agent file) simultaneously improves both the dev experience and the product.
+```
+~/tweebs-projects/{project-name}/
+├── .git/                     # Local git (no remote)
+├── .tweebs/                  # Coordination layer (hidden from user)
+│   ├── tasks/                # Task files (written by Command Executor)
+│   ├── progress/             # Progress files (written by worker Tweebs)
+│   └── artifacts/            # Cross-Tweeb handoff files
+├── .mcp.json                 # Project-level MCP config
+├── src/                      # Actual project code
+└── ...                       # Scaffolded by blueprint
+```

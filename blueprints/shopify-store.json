@@ -6,8 +6,8 @@
 
   "dependencies": {
     "universal": {
-      "note": "These are installed during onboarding, not per-blueprint",
-      "list": ["node", "git", "gh", "claude|codex"]
+      "note": "Installed during onboarding",
+      "list": ["node", "git", "claude"]
     },
     "blueprint": [
       {

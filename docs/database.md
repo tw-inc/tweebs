@@ -10,9 +10,9 @@ CREATE TABLE projects (
   name TEXT NOT NULL,
   description TEXT,
   blueprint_id TEXT,
-  backend TEXT NOT NULL CHECK(backend IN ('claude', 'codex')),
+  project_path TEXT NOT NULL,   -- ~/tweebs-projects/{name}/
   status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'paused', 'completed', 'archived')),
-  github_org TEXT,
+  pm_session_id TEXT,           -- Claude Code session ID for PM resumption
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
@@ -23,12 +23,8 @@ CREATE TABLE tweebs (
   role TEXT NOT NULL,
   display_name TEXT NOT NULL,
   avatar_color TEXT NOT NULL,
-  system_prompt_path TEXT NOT NULL,
-  repo_url TEXT,
-  repo_local_path TEXT,
-  pid INTEGER,
-  status TEXT NOT NULL DEFAULT 'idle' CHECK(status IN ('idle', 'working', 'paused', 'blocked', 'done', 'rate_limited', 'error')),
-  backend TEXT NOT NULL CHECK(backend IN ('claude', 'codex')),
+  pid INTEGER,                  -- OS process ID when running
+  status TEXT NOT NULL DEFAULT 'idle' CHECK(status IN ('idle', 'working', 'blocked', 'done', 'rate_limited', 'error')),
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
@@ -68,17 +64,28 @@ CREATE INDEX idx_tickets_tweeb ON tickets(assigned_tweeb_id);
 CREATE INDEX idx_messages_project ON messages(project_id, created_at);
 ```
 
+## Changes from initial design
+
+- **Removed `repo_url` and `repo_local_path` from tweebs table**: All Tweebs work in the same project directory. No per-Tweeb repos.
+- **Removed `backend` from tweebs table**: V1 is Claude-only. Backend choice is project-level (and there's only one option).
+- **Removed `system_prompt_path` from tweebs table**: Derived from role — `prompts/{role}.md`. No need to store it.
+- **Added `pm_session_id` to projects table**: Needed for Claude Code `--resume` to maintain PM conversation across sessions.
+- **Added `project_path` to projects table**: Local filesystem path to the project directory.
+
 ## Settings Keys
 
 | Key | Value | Purpose |
 |-----|-------|---------|
-| `username` | string | TWEEBS username |
-| `tweeber_github` | string | `{username}-tweeber` GitHub account/org |
-| `backend` | `claude` or `codex` | Default LLM backend |
-| `permissions_accepted` | `true`/`false` | --dangerously-skip-permissions disclaimer |
-| `phone_number` | string | For SMS notifications (optional) |
-| `onboarding_complete` | `true`/`false` | Whether first-run setup finished |
-| `voice_enabled` | `true`/`false` | TTS for PM messages |
+| `username` | string | TWEEBS display name |
+| `permissions_accepted` | `true`/`false` | Disclaimer accepted |
+| `onboarding_complete` | `true`/`false` | First-run setup finished |
+| `notification_enabled` | `true`/`false` | macOS notifications |
+
+Removed from initial design:
+- `tweeber_github` — no GitHub accounts
+- `backend` — V1 is Claude-only
+- `phone_number` — SMS is V2
+- `voice_enabled` — TTS is V2
 
 ## Migration Strategy
 
@@ -93,4 +100,5 @@ V1 uses a single migration that creates all tables. Future versions:
 - Projects can be archived (not deleted) — preserves history
 - When a project is archived: kill all Tweeb processes, keep all data
 - SQLite file can be backed up by copying the single `.db` file
-- No data leaves the machine in V1
+- No data leaves the machine
+- Project source code lives at `~/tweebs-projects/{name}/`, database metadata lives in the app's SQLite

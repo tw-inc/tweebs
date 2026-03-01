@@ -6,8 +6,8 @@
 
   "dependencies": {
     "universal": {
-      "note": "These are installed during onboarding, not per-blueprint",
-      "list": ["node", "git", "gh", "claude|codex"]
+      "note": "Installed during onboarding",
+      "list": ["node", "git", "claude"]
     },
     "blueprint": [
       {
@@ -17,15 +17,8 @@
         "minVersion": "15.0",
         "install": null,
         "blocker": true,
-        "blockerMessage": "iOS development requires Xcode, which can only be installed from the App Store.",
+        "blockerMessage": "To build an iOS app, you need Xcode installed. It's free from the App Store.",
         "blockerLink": "macappstore://itunes.apple.com/app/xcode/id497799835"
-      },
-      {
-        "name": "CocoaPods",
-        "check": "which pod",
-        "versionCheck": "pod --version",
-        "install": "sudo gem install cocoapods",
-        "blocker": false
       },
       {
         "name": "iOS Simulator",
@@ -41,7 +34,7 @@
     {
       "name": "Xcode",
       "reason": "Cannot auto-install — requires App Store",
-      "resolution": "Install Xcode from the App Store, then relaunch TWEEBS"
+      "resolution": "Install Xcode from the App Store, then come back"
     }
   ],
 
@@ -49,7 +42,7 @@
     {
       "name": "Apple Developer Account",
       "required": false,
-      "note": "Only needed for deploying to the App Store or testing on a physical device. Simulator testing works without it.",
+      "note": "Only needed for App Store publishing or testing on a physical device. Simulator testing works without it.",
       "enrollUrl": "https://developer.apple.com/programs/enroll/"
     }
   ],
@@ -60,19 +53,19 @@
 
   "scaffolding": {
     "stack": "SwiftUI + Swift 5.9+ + Xcode project",
+    "strategy": "template",
+    "note": "Ship a minimal SwiftUI app template in blueprints/templates/ios-app/. Copy it to the project directory. This gives us a working .xcodeproj with SwiftUI App lifecycle, unlike swift package init which only creates a CLI executable.",
     "commands": [
-      "mkdir -p {project-name} && cd {project-name}",
-      "swift package init --type executable --name {project-name}"
+      "cp -r blueprints/templates/ios-app/ {project-path}/",
+      "sed -i '' 's/TemplateApp/{project-name}/g' {project-path}/*.xcodeproj/project.pbxproj"
     ],
     "postScaffold": [
-      "Create Xcode project structure with SwiftUI App lifecycle",
-      "Set up basic ContentView.swift",
-      "Configure Info.plist with app metadata"
-    ],
-    "note": "Xcode project creation may be handled by the mobile-engineer Tweeb directly since swift package init doesn't create a full iOS app structure. The Tweeb will use xcodebuild or create the .xcodeproj manually."
+      "Rename TemplateApp references to project name",
+      "Set up basic ContentView.swift with placeholder"
+    ]
   },
 
-  "initialContext": "The user wants to build an iOS app. Ask what the app does (one sentence), who it's for, and the 2-3 most important screens. Don't ask about technical details — the architect will handle those. Then hand off to architect for app architecture, designer for UI/UX, and mobile engineer for implementation.",
+  "initialContext": "The user wants to build an iOS app. Ask what the app does (one sentence), who it's for, and the 2-3 most important screens. Don't ask about technical details — the architect handles those. Then hand off to architect for app architecture, designer for UI/UX, and mobile engineer for implementation.",
 
   "ticketTemplate": [
     {
