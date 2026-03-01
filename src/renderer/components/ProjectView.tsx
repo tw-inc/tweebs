@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { useChatStore } from '../stores/chatStore'
+import ChatView from './Chat/ChatView'
 import type { Project, Ticket, Message, Tweeb } from '@shared/types'
 
 interface ProjectData {
@@ -10,10 +12,16 @@ interface ProjectData {
 
 export default function ProjectView({ projectId, onBack }: { projectId: string; onBack: () => void }) {
   const [data, setData] = useState<ProjectData | null>(null)
+  const { setMessages, clear } = useChatStore()
 
   useEffect(() => {
-    window.api.projects.get(projectId).then(setData)
-  }, [projectId])
+    clear()
+    window.api.projects.get(projectId).then((d) => {
+      setData(d)
+      setMessages(d.messages)
+    })
+    return () => clear()
+  }, [projectId, setMessages, clear])
 
   if (!data) {
     return (
@@ -31,7 +39,7 @@ export default function ProjectView({ projectId, onBack }: { projectId: string; 
       </div>
       <div className="project-view-body">
         <div className="project-view-chat">
-          <div className="placeholder-text">Chat panel — Phase 3</div>
+          <ChatView projectId={projectId} />
         </div>
         <div className="project-view-board">
           <div className="placeholder-text">Board panel — Phase 4</div>
