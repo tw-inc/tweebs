@@ -3,7 +3,7 @@ import { useProjectStore } from '../../stores/projectStore'
 import { useAppStore } from '../../stores/appStore'
 import type { Project } from '@shared/types'
 
-export default function HomeView({ onNewProject }: { onNewProject: () => void }) {
+export default function HomeView({ onNewProject, onSettings }: { onNewProject: () => void; onSettings?: () => void }) {
   const { projects, loading, fetchProjects } = useProjectStore()
   const openProject = useAppStore((s) => s.openProject)
 
@@ -15,6 +15,11 @@ export default function HomeView({ onNewProject }: { onNewProject: () => void })
     <div className="home">
       <div className="home-header">
         <h1>Your Projects</h1>
+        {onSettings && (
+          <button className="settings-btn" onClick={onSettings}>
+            Settings
+          </button>
+        )}
       </div>
       <div className="home-grid">
         <button className="project-card new-project-card" onClick={onNewProject}>
