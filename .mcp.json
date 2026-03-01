@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "electron-devtools": {
+      "command": "npx",
+      "args": ["@anthropic-ai/electron-mcp-server"],
+      "transport": "stdio"
+    }
+  }
+}
