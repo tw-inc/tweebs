@@ -34,7 +34,7 @@ export default function NewProjectView({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="new-project">
-      <div className="new-project-header">
+      <div className="new-project-header drag-region">
         <button className="back-btn" onClick={onBack}>
           ← Back
         </button>

@@ -4,7 +4,7 @@ import fs from 'fs'
 import path from 'path'
 import { spawnClaudeAgent, sendToAgent, killAgent } from './claude'
 import { CommandExecutor } from './command-executor'
-import { createTweeb, updateTweeb, createMessage, updateProject, getTweebsByProject } from '../db'
+import { createTweeb, updateTweeb, createMessage, updateProject, getTweebsByProject, getProject } from '../db'
 import { notifyDecisionNeeded, notifyProjectComplete } from '../notifications'
 import type { AgentProcess } from './types'
 import type { StreamMessage, Message, Tweeb } from '@shared/types'
@@ -41,10 +41,30 @@ export class TweebManager {
   private retryStates: Map<string, RetryState> = new Map()
   private progressPoller: NodeJS.Timeout | null = null
 
+  isPMRunning(projectId: string): boolean {
+    return this.pmAgents.has(projectId)
+  }
+
   spawnPM(projectId: string, workingDir: string, initialPrompt: string, systemPrompt: string, sessionId?: string): string {
+    // Don't spawn duplicate PM processes
+    if (this.pmAgents.has(projectId)) {
+      console.log(`[TweebManager] PM already running for ${projectId}, skipping spawn`)
+      return this.pmAgents.get(projectId)!.id
+    }
+
     const tweebId = nanoid()
     const now = Date.now()
     const config = ROLE_CONFIG['pm']
+
+    // Check if a PM tweeb already exists for this project, reuse it
+    const existingPMs = getTweebsByProject(projectId).filter((t: Tweeb) => t.role === 'pm')
+    if (existingPMs.length > 0) {
+      // Update existing PM tweeb instead of creating a new one
+      const existingPM = existingPMs[0]
+      updateTweeb(existingPM.id, { status: 'working', pid: null })
+      // Use existing tweeb ID for tracking
+      return this.spawnPMProcess(existingPM.id, projectId, workingDir, initialPrompt, systemPrompt, sessionId)
+    }
 
     const tweeb: Tweeb = {
       id: tweebId,
@@ -58,6 +78,11 @@ export class TweebManager {
       updated_at: now
     }
     createTweeb(tweeb)
+
+    return this.spawnPMProcess(tweebId, projectId, workingDir, initialPrompt, systemPrompt, sessionId)
+  }
+
+  private spawnPMProcess(tweebId: string, projectId: string, workingDir: string, initialPrompt: string, systemPrompt: string, sessionId?: string): string {
 
     let textAccumulator = ''
 
@@ -162,8 +187,8 @@ export class TweebManager {
       onExit: (code) => {
         this.agents.delete(tweebId)
 
-        // If rate limited, schedule retry with exponential backoff
-        if (rateLimited || code !== 0) {
+        // Only retry on rate limit, not other errors
+        if (rateLimited) {
           const existing = this.retryStates.get(tweebId)
           const attempt = existing ? existing.attempt + 1 : 0
 
@@ -301,7 +326,6 @@ export class TweebManager {
       if (!agent) continue
 
       // Read progress files from .tweebs/progress/
-      const { getProject } = require('../db')
       const project = getProject(projectId)
       if (!project) continue
 

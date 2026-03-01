@@ -22,7 +22,7 @@ export default function App() {
   if (onboardingComplete === null) {
     return (
       <div className="app">
-        <div className="app-centered">
+        <div className="app-centered drag-region">
           <h1 className="app-title">TWEEBS</h1>
         </div>
       </div>

@@ -7,6 +7,12 @@ const COLUMN_LABELS: Record<TicketColumn, string> = {
   done: 'Done'
 }
 
+const COLUMN_EMPTY: Record<TicketColumn, string> = {
+  backlog: 'No tasks yet',
+  in_progress: 'Nothing in progress',
+  done: 'No completed work yet'
+}
+
 interface ColumnProps {
   column: TicketColumn
   tickets: Ticket[]
@@ -31,7 +37,7 @@ export default function Column({ column, tickets, tweebs, onCardClick }: ColumnP
           />
         ))}
         {tickets.length === 0 && (
-          <div className="column-empty">No tickets</div>
+          <div className="column-empty">{COLUMN_EMPTY[column]}</div>
         )}
       </div>
     </div>

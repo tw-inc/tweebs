@@ -30,6 +30,26 @@ export function closeDb(): void {
   }
 }
 
+// Column whitelists for safe dynamic SQL
+const PROJECT_COLUMNS = new Set(['name', 'description', 'blueprint_id', 'project_path', 'status', 'pm_session_id'])
+const TWEEB_COLUMNS = new Set(['project_id', 'role', 'display_name', 'avatar_color', 'pid', 'status'])
+const TICKET_COLUMNS = new Set(['project_id', 'assigned_tweeb_id', 'title', 'description', 'column_name', 'priority'])
+
+function buildSafeUpdate(updates: Record<string, unknown>, allowedColumns: Set<string>): { fields: string; safeUpdates: Record<string, unknown> } {
+  const safeUpdates: Record<string, unknown> = {}
+  const parts: string[] = []
+  for (const key of Object.keys(updates)) {
+    if (key === 'id') continue
+    if (!allowedColumns.has(key)) {
+      console.warn(`[db] Rejected unknown column in update: ${key}`)
+      continue
+    }
+    parts.push(`${key} = @${key}`)
+    safeUpdates[key] = updates[key]
+  }
+  return { fields: parts.join(', '), safeUpdates }
+}
+
 // === Project queries ===
 
 export function createProject(project: Project): Project {
@@ -50,13 +70,10 @@ export function listProjects(): Project[] {
 }
 
 export function updateProject(id: string, updates: Partial<Project>): void {
-  const fields = Object.keys(updates)
-    .filter((k) => k !== 'id')
-    .map((k) => `${k} = @${k}`)
-    .join(', ')
+  const { fields, safeUpdates } = buildSafeUpdate(updates as Record<string, unknown>, PROJECT_COLUMNS)
   if (!fields) return
   getDb().prepare(`UPDATE projects SET ${fields}, updated_at = @updated_at WHERE id = @id`).run({
-    ...updates,
+    ...safeUpdates,
     id,
     updated_at: Date.now()
   })
@@ -78,13 +95,10 @@ export function getTweebsByProject(projectId: string): Tweeb[] {
 }
 
 export function updateTweeb(id: string, updates: Partial<Tweeb>): void {
-  const fields = Object.keys(updates)
-    .filter((k) => k !== 'id')
-    .map((k) => `${k} = @${k}`)
-    .join(', ')
+  const { fields, safeUpdates } = buildSafeUpdate(updates as Record<string, unknown>, TWEEB_COLUMNS)
   if (!fields) return
   getDb().prepare(`UPDATE tweebs SET ${fields}, updated_at = @updated_at WHERE id = @id`).run({
-    ...updates,
+    ...safeUpdates,
     id,
     updated_at: Date.now()
   })
@@ -106,13 +120,10 @@ export function getTicketsByProject(projectId: string): Ticket[] {
 }
 
 export function updateTicket(id: string, updates: Partial<Ticket>): void {
-  const fields = Object.keys(updates)
-    .filter((k) => k !== 'id')
-    .map((k) => `${k} = @${k}`)
-    .join(', ')
+  const { fields, safeUpdates } = buildSafeUpdate(updates as Record<string, unknown>, TICKET_COLUMNS)
   if (!fields) return
   getDb().prepare(`UPDATE tickets SET ${fields}, updated_at = @updated_at WHERE id = @id`).run({
-    ...updates,
+    ...safeUpdates,
     id,
     updated_at: Date.now()
   })

@@ -4,8 +4,10 @@ import { getDb, closeDb } from './db'
 import { registerAllHandlers } from './ipc'
 import { tweebManager } from './agents/manager'
 
-// Enable Chrome DevTools remote debugging for MCP
-app.commandLine.appendSwitch('remote-debugging-port', '9222')
+// Enable Chrome DevTools remote debugging for MCP (dev only)
+if (!app.isPackaged) {
+  app.commandLine.appendSwitch('remote-debugging-port', '9222')
+}
 
 let mainWindow: BrowserWindow | null = null
 
@@ -17,7 +19,7 @@ function createWindow(): void {
     minHeight: 600,
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 16, y: 16 },
-    backgroundColor: '#0f0f0f',
+    backgroundColor: '#1e252c',
     show: false,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),

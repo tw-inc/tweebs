@@ -10,19 +10,22 @@ export default function BoardView({ projectId }: { projectId: string }) {
   const { tickets, tweebs, selectedTicketId, updateTickets, updateTweeb, selectTicket } =
     useBoardStore()
 
-  // Listen for board updates from main process
+  // Listen for board updates from main process — filter by projectId
   useEffect(() => {
     const unsubBoard = window.api.board.onUpdate((newTickets) => {
-      updateTickets(newTickets as Ticket[])
+      const filtered = (newTickets as Ticket[]).filter((t) => t.project_id === projectId)
+      if (filtered.length > 0) updateTickets(filtered)
     })
-    const unsubTweeb = window.api.tweeb.onStatus((tweeb) => {
-      updateTweeb(tweeb as Tweeb)
+    const unsubTweeb = window.api.tweeb.onStatus((data) => {
+      const tweeb = data as Tweeb
+      if (tweeb.project_id !== projectId) return
+      updateTweeb(tweeb)
     })
     return () => {
       unsubBoard()
       unsubTweeb()
     }
-  }, [updateTickets, updateTweeb])
+  }, [updateTickets, updateTweeb, projectId])
 
   const selectedTicket = tickets.find((t) => t.id === selectedTicketId)
 

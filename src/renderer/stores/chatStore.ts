@@ -44,7 +44,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   respondToDecision: async (projectId, choice) => {
     set({ decision: null })
-    await get().sendMessage(projectId, choice)
+    // Only send through decision:respond -- it saves the message on the main process side
+    // Do NOT also call sendMessage which would spawn a duplicate PM
     await window.api.decisions.respond(projectId, choice)
   },
 

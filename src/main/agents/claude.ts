@@ -156,11 +156,12 @@ export function sendToAgent(agent: AgentProcess, message: string): void {
 export function killAgent(agent: AgentProcess): void {
   if (!agent.process.killed) {
     agent.process.kill('SIGTERM')
-    // Force kill after 5 seconds
-    setTimeout(() => {
+    // Force kill after 5 seconds, clear timer if process exits first
+    const timer = setTimeout(() => {
       if (!agent.process.killed) {
         agent.process.kill('SIGKILL')
       }
     }, 5000)
+    agent.process.once('exit', () => clearTimeout(timer))
   }
 }

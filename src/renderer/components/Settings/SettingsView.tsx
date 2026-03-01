@@ -22,7 +22,7 @@ export default function SettingsView({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="settings-view">
-      <div className="settings-header">
+      <div className="settings-header drag-region">
         <button className="back-btn" onClick={onBack}>← Back</button>
         <h2>Settings</h2>
       </div>

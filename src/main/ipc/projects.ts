@@ -12,13 +12,29 @@ import {
   getMessagesByProject,
   getTweebsByProject
 } from '../db'
+import { scaffoldProject } from '../blueprints'
 import type { Project } from '@shared/types'
 
 export function registerProjectHandlers(): void {
   ipcMain.handle('project:create', async (_event, name: string, description: string, blueprintId: string) => {
+    // Input validation
+    if (typeof name !== 'string' || !name.trim()) throw new Error('Project name is required')
+    if (name.length > 100) throw new Error('Project name too long')
+
     const id = nanoid()
     const slug = slugify(name, { lower: true, strict: true })
-    const projectPath = path.join(os.homedir(), 'tweebs-projects', slug)
+    let projectPath = path.join(os.homedir(), 'tweebs-projects', slug)
+
+    // Prevent duplicate slug collisions
+    if (fs.existsSync(projectPath)) {
+      projectPath = `${projectPath}-${nanoid(6)}`
+    }
+
+    // Validate resolved path is inside tweebs-projects
+    const base = path.join(os.homedir(), 'tweebs-projects')
+    if (!path.resolve(projectPath).startsWith(path.resolve(base))) {
+      throw new Error('Invalid project path')
+    }
 
     // Create project directory and .tweebs coordination dirs
     fs.mkdirSync(path.join(projectPath, '.tweebs', 'tasks'), { recursive: true })
@@ -36,8 +52,8 @@ export function registerProjectHandlers(): void {
     const now = Date.now()
     const project: Project = {
       id,
-      name,
-      description: description || null,
+      name: name.trim(),
+      description: description?.trim() || null,
       blueprint_id: blueprintId || null,
       project_path: projectPath,
       status: 'active',
@@ -47,6 +63,16 @@ export function registerProjectHandlers(): void {
     }
 
     dbCreateProject(project)
+
+    // Run blueprint scaffolding if a blueprint was selected
+    if (blueprintId) {
+      try {
+        await scaffoldProject(blueprintId, projectPath)
+      } catch (err) {
+        console.error('[project:create] Scaffolding error:', err)
+      }
+    }
+
     return project
   })
 
@@ -56,7 +82,7 @@ export function registerProjectHandlers(): void {
 
   ipcMain.handle('project:get', async (_event, id: string) => {
     const project = getProject(id)
-    if (!project) throw new Error(`Project not found: ${id}`)
+    if (!project) return null
 
     const tickets = getTicketsByProject(id)
     const messages = getMessagesByProject(id)

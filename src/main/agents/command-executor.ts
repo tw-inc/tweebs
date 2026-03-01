@@ -127,9 +127,16 @@ export class CommandExecutor {
   private handleSpawnWorker(cmd: Extract<PMCommand, { cmd: 'spawn_worker' }>): void {
     // Load role-specific system prompt
     let systemPrompt = `You are a ${cmd.role}. Complete the following task.`
-    const promptPath = path.join(process.cwd(), 'prompts', `${cmd.role}.md`)
-    if (fs.existsSync(promptPath)) {
-      systemPrompt = fs.readFileSync(promptPath, 'utf-8')
+    // Try multiple paths: built output, then dev-time project root
+    const candidates = [
+      path.join(__dirname, '../../prompts', `${cmd.role}.md`),
+      path.join(__dirname, '../../../prompts', `${cmd.role}.md`)
+    ]
+    for (const promptPath of candidates) {
+      if (fs.existsSync(promptPath)) {
+        systemPrompt = fs.readFileSync(promptPath, 'utf-8')
+        break
+      }
     }
 
     const taskPrompt = `Task: ${cmd.task.title}\n\nDescription: ${cmd.task.description}\n\nAcceptance Criteria:\n${cmd.task.acceptanceCriteria.map((c) => `- ${c}`).join('\n')}`

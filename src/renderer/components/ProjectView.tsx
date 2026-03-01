@@ -18,15 +18,20 @@ export default function ProjectView({ projectId, onBack }: { projectId: string; 
   const { setTickets, setTweebs, clear: clearBoard } = useBoardStore()
 
   useEffect(() => {
+    let cancelled = false
     clearChat()
     clearBoard()
     window.api.projects.get(projectId).then((d) => {
+      if (cancelled || !d) return
       setData(d)
       setMessages(d.messages)
       setTickets(d.tickets)
       setTweebs(d.tweebs)
+    }).catch((err) => {
+      console.error('Failed to load project:', err)
     })
     return () => {
+      cancelled = true
       clearChat()
       clearBoard()
     }
@@ -42,7 +47,7 @@ export default function ProjectView({ projectId, onBack }: { projectId: string; 
 
   return (
     <div className="project-view">
-      <div className="project-view-header">
+      <div className="project-view-header drag-region">
         <button className="back-btn" onClick={onBack}>← Back</button>
         <h2>{data.project.name}</h2>
       </div>

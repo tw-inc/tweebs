@@ -31,9 +31,13 @@ export const useBoardStore = create<BoardState>((set) => ({
     }),
 
   updateTweeb: (tweeb) =>
-    set((state) => ({
-      tweebs: state.tweebs.map((t) => (t.id === tweeb.id ? tweeb : t))
-    })),
+    set((state) => {
+      const exists = state.tweebs.some((t) => t.id === tweeb.id)
+      if (exists) {
+        return { tweebs: state.tweebs.map((t) => (t.id === tweeb.id ? tweeb : t)) }
+      }
+      return { tweebs: [...state.tweebs, tweeb] }
+    }),
 
   selectTicket: (id) => set({ selectedTicketId: id }),
   clear: () => set({ tickets: [], tweebs: [], selectedTicketId: null })

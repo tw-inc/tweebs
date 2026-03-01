@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 
 interface ChatInputProps {
   onSend: (message: string) => void
@@ -13,11 +13,28 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
     inputRef.current?.focus()
   }, [])
 
+  // Auto-resize textarea
+  const autoResize = useCallback(() => {
+    const el = inputRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+  }, [])
+
+  function handleChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    setValue(e.target.value)
+    autoResize()
+  }
+
   function handleSubmit() {
     const trimmed = value.trim()
     if (!trimmed || disabled) return
     onSend(trimmed)
     setValue('')
+    // Reset height after clearing
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto'
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -34,7 +51,7 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
         className="chat-input"
         placeholder="Tell the PM what you want to build..."
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={handleChange}
         onKeyDown={handleKeyDown}
         disabled={disabled}
         rows={1}

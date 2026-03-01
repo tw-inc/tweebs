@@ -13,7 +13,7 @@ export default function HomeView({ onNewProject, onSettings }: { onNewProject: (
 
   return (
     <div className="home">
-      <div className="home-header">
+      <div className="home-header drag-region">
         <h1>Your Projects</h1>
         {onSettings && (
           <button className="settings-btn" onClick={onSettings}>

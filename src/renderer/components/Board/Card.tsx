@@ -1,18 +1,8 @@
 import type { Ticket, Tweeb, CardState } from '@shared/types'
 import { deriveCardState } from '../../stores/boardStore'
+import { roleColor, theme } from '../../styles/theme'
 
-const ROLE_COLORS: Record<string, string> = {
-  pm: '#6366f1',
-  architect: '#14b8a6',
-  'ux-designer': '#a855f7',
-  'frontend-engineer': '#22c55e',
-  'backend-engineer': '#eab308',
-  'mobile-engineer': '#ef4444',
-  'qa-engineer': '#f97316',
-  sdet: '#ec4899'
-}
-
-const STATE_CONFIG: Record<CardState, { label: string; className: string }> = {
+export const STATE_CONFIG: Record<CardState, { label: string; className: string }> = {
   queued: { label: 'Queued', className: 'state-queued' },
   starting: { label: 'Starting...', className: 'state-starting' },
   working: { label: 'Working', className: 'state-working' },
@@ -32,7 +22,7 @@ export default function Card({ ticket, tweebs, onClick }: CardProps) {
   const assignedTweeb = tweebs.find((t) => t.id === ticket.assigned_tweeb_id)
   const cardState = deriveCardState(ticket, tweebs)
   const config = STATE_CONFIG[cardState]
-  const avatarColor = assignedTweeb ? (ROLE_COLORS[assignedTweeb.role] || '#666') : '#444'
+  const avatarColor = assignedTweeb ? (roleColor[assignedTweeb.role] || theme.textMuted) : theme.textFaint
 
   return (
     <button className={`card ${config.className}`} onClick={onClick}>

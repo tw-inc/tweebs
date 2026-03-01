@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import type { Ticket, Tweeb } from '@shared/types'
 import { deriveCardState } from '../../stores/boardStore'
+import { STATE_CONFIG } from './Card'
 
 interface TicketDetailProps {
   ticket: Ticket
@@ -10,6 +12,22 @@ interface TicketDetailProps {
 export default function TicketDetail({ ticket, tweebs, onClose }: TicketDetailProps) {
   const assignedTweeb = tweebs.find((t) => t.id === ticket.assigned_tweeb_id)
   const cardState = deriveCardState(ticket, tweebs)
+  const stateInfo = STATE_CONFIG[cardState]
+
+  // Escape key to close
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
+  const columnLabel: Record<string, string> = {
+    backlog: 'Backlog',
+    in_progress: 'In Progress',
+    done: 'Done'
+  }
 
   return (
     <div className="ticket-detail-overlay" onClick={onClose}>
@@ -22,7 +40,7 @@ export default function TicketDetail({ ticket, tweebs, onClose }: TicketDetailPr
         <div className="ticket-detail-body">
           <div className="ticket-detail-row">
             <span className="ticket-label">Status</span>
-            <span className={`ticket-value card-status ${cardState}`}>{cardState}</span>
+            <span className={`ticket-value card-status ${stateInfo.className}`}>{stateInfo.label}</span>
           </div>
 
           {assignedTweeb && (
@@ -34,7 +52,7 @@ export default function TicketDetail({ ticket, tweebs, onClose }: TicketDetailPr
 
           <div className="ticket-detail-row">
             <span className="ticket-label">Column</span>
-            <span className="ticket-value">{ticket.column_name}</span>
+            <span className="ticket-value">{columnLabel[ticket.column_name] || ticket.column_name}</span>
           </div>
 
           {ticket.description && (

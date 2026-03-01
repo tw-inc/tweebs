@@ -5,19 +5,42 @@
 }
 
 :root {
-  --bg-primary: #0f0f0f;
-  --bg-secondary: #1a1a1a;
-  --bg-tertiary: #252525;
-  --bg-hover: #2a2a2a;
-  --text-primary: #f0f0f0;
-  --text-secondary: #a0a0a0;
-  --text-muted: #666;
-  --accent: #6366f1;
-  --accent-hover: #818cf8;
-  --border: #2a2a2a;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --error: #ef4444;
+  /* Surface colors — dark blue-grey family */
+  --bg-primary: #1e252c;
+  --bg-secondary: #282f37;
+  --bg-tertiary: #303840;
+  --bg-hover: #383f48;
+  --bg-elevated: #404850;
+
+  /* Text — greyscale */
+  --text-primary: #F7F7F7;
+  --text-secondary: #BFBDBD;
+  --text-muted: #808082;
+  --text-faint: #4e5155;
+
+  /* Borders */
+  --border: #383f48;
+  --border-subtle: #303840;
+
+  /* Palette — pastel accents */
+  --red: #ee9e97;
+  --orange: #edc292;
+  --yellow: #f0d37c;
+  --green: #d0d8a3;
+  --teal: #a8d6d5;
+  --blue: #a3cbe5;
+  --indigo: #97a5d3;
+  --purple: #a083b5;
+  --pink: #e1819b;
+
+  /* Semantic */
+  --accent: #a3cbe5;
+  --accent-hover: #b7d7ed;
+  --success: #d0d8a3;
+  --warning: #edc292;
+  --error: #e1819b;
+
+  /* Radius */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
@@ -36,10 +59,14 @@ body {
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Only titlebar/header areas should be window-draggable */
+.drag-region {
   -webkit-app-region: drag;
 }
 
-button, input, textarea, select {
+button, input, textarea, select, a {
   -webkit-app-region: no-drag;
 }
 
@@ -194,9 +221,9 @@ button, input, textarea, select {
   margin-top: auto;
 }
 
-.status-active { color: var(--accent); }
-.status-completed { color: var(--success); }
-.status-paused { color: var(--warning); }
+.status-active { color: var(--blue); }
+.status-completed { color: var(--green); }
+.status-paused { color: var(--orange); }
 .status-archived { color: var(--text-muted); }
 
 .loading-text {
@@ -499,13 +526,13 @@ button, input, textarea, select {
 }
 
 .message-bubble.pm .message-text {
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary);
   color: var(--text-primary);
 }
 
 .message-bubble.user .message-text {
-  background: var(--accent);
-  color: white;
+  background: var(--indigo);
+  color: var(--bg-primary);
 }
 
 /* Chat Input */
@@ -740,28 +767,36 @@ button, input, textarea, select {
 }
 
 .card-status.state-queued { color: var(--text-muted); }
-.card-status.state-starting { color: var(--accent); }
-.card-status.state-working { color: var(--accent); }
-.card-status.state-rate-limited { color: var(--warning); }
-.card-status.state-blocked { color: var(--warning); }
-.card-status.state-done { color: var(--success); }
-.card-status.state-error { color: var(--error); }
+.card-status.state-starting { color: var(--blue); }
+.card-status.state-working { color: var(--blue); }
+.card-status.state-rate-limited { color: var(--orange); }
+.card-status.state-blocked { color: var(--yellow); }
+.card-status.state-done { color: var(--green); }
+.card-status.state-error { color: var(--pink); }
 
 .card.state-working {
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--blue);
+}
+
+.card.state-starting {
+  border-left: 3px solid var(--indigo);
 }
 
 .card.state-done {
-  border-left: 3px solid var(--success);
+  border-left: 3px solid var(--green);
   opacity: 0.8;
 }
 
 .card.state-rate-limited {
-  border-left: 3px solid var(--warning);
+  border-left: 3px solid var(--orange);
+}
+
+.card.state-blocked {
+  border-left: 3px solid var(--yellow);
 }
 
 .card.state-error {
-  border-left: 3px solid var(--error);
+  border-left: 3px solid var(--pink);
 }
 
 /* Ticket Detail Overlay */
@@ -855,6 +890,18 @@ button, input, textarea, select {
   align-items: center;
   justify-content: center;
   padding: 32px;
+  padding-top: 52px;
+  position: relative;
+}
+
+.onboarding-step::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 52px;
+  -webkit-app-region: drag;
 }
 
 .onboarding-content {
@@ -946,7 +993,7 @@ button, input, textarea, select {
 }
 
 .onboarding-error {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(225, 129, 155, 0.1);
   border: 1px solid var(--error);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
@@ -1144,4 +1191,74 @@ button, input, textarea, select {
 .settings-value {
   font-size: 13px;
   color: var(--text-muted);
+}
+
+/* === Typing Indicator === */
+
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 12px 16px !important;
+}
+
+.typing-indicator .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: typing-bounce 1.4s ease-in-out infinite;
+}
+
+.typing-indicator .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* === Transitions === */
+
+.project-card,
+.blueprint-card,
+.subscription-card,
+.card,
+.decision-option-btn,
+.settings-save-btn,
+.settings-action-btn,
+.create-btn,
+.onboarding-next-btn,
+.onboarding-secondary-btn,
+.back-btn,
+.settings-btn {
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.project-card:active,
+.blueprint-card:active,
+.create-btn:active:not(:disabled),
+.onboarding-next-btn:active:not(:disabled),
+.chat-send-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Column empty states */
+.column-empty {
+  color: var(--text-faint);
+  font-size: 13px;
+  text-align: center;
+  padding: 24px 16px;
+  font-style: italic;
 }

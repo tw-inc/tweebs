@@ -1,4 +1,4 @@
-import { execSync } from 'child_process'
+import { execFile } from 'child_process'
 
 export interface DependencyStatus {
   homebrew: boolean
@@ -8,14 +8,16 @@ export interface DependencyStatus {
   claudeAuth: boolean
 }
 
-export function detectDependencies(): DependencyStatus {
-  return {
-    homebrew: checkCommand('brew --version'),
-    node: checkCommand('node --version'),
-    git: checkCommand('git --version'),
-    claudeCode: checkCommand('claude --version'),
-    claudeAuth: checkClaudeAuth()
-  }
+export async function detectDependencies(): Promise<DependencyStatus> {
+  // Run all checks in parallel to avoid blocking the main thread
+  const [homebrew, node, git, claudeCode, claudeAuth] = await Promise.all([
+    checkCommand('brew', ['--version']),
+    checkCommand('node', ['--version']),
+    checkCommand('git', ['--version']),
+    checkCommand('claude', ['--version']),
+    checkClaudeAuth()
+  ])
+  return { homebrew, node, git, claudeCode, claudeAuth }
 }
 
 export function getOnboardingStep(deps: DependencyStatus): string {
@@ -27,20 +29,20 @@ export function getOnboardingStep(deps: DependencyStatus): string {
   return 'ready'
 }
 
-function checkCommand(cmd: string): boolean {
-  try {
-    execSync(cmd, { stdio: 'pipe', timeout: 10000 })
-    return true
-  } catch {
-    return false
-  }
+function checkCommand(cmd: string, args: string[]): Promise<boolean> {
+  return new Promise((resolve) => {
+    execFile(cmd, args, { timeout: 10_000 }, (err) => {
+      resolve(!err)
+    })
+  })
 }
 
-function checkClaudeAuth(): boolean {
-  try {
-    const output = execSync('claude auth status', { stdio: 'pipe', timeout: 10000 }).toString()
-    return output.toLowerCase().includes('authenticated') || output.toLowerCase().includes('logged in')
-  } catch {
-    return false
-  }
+function checkClaudeAuth(): Promise<boolean> {
+  return new Promise((resolve) => {
+    execFile('claude', ['auth', 'status'], { timeout: 10_000 }, (err, stdout) => {
+      if (err) { resolve(false); return }
+      const output = stdout.toString().toLowerCase()
+      resolve(output.includes('authenticated') || output.includes('logged in'))
+    })
+  })
 }
