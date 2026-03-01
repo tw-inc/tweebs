@@ -61,9 +61,11 @@ tweebs/
 - PM command protocol for all PM → system interactions (see docs/architecture.md)
 - macOS Notification API for user alerts (no Twilio, no SMS in V1)
 
-## Key Docs
+## Key Docs (read in this order)
 
-- `docs/architecture.md` — system overview, PM command protocol, data flow
-- `docs/agent-engine.md` — CLI wrapping, streaming, rate limits, process models
-- `docs/multi-agent.md` — coordination, task dispatch, progress tracking
-- `docs/dev-feedback-loop.md` — how to iterate on UI cheaply with Chrome DevTools MCP
+1. `docs/development-plan.md` — **START HERE.** 8 build phases, pre-flight checklist, critical path demos, risk verification, V1 scope boundaries
+2. `docs/technical-spec.md` — All TypeScript types, 30+ IPC channels, React component trees, Zustand stores, main process module APIs, electron-vite config
+3. `docs/architecture.md` — system overview, PM command protocol, data flow
+4. `docs/agent-engine.md` — CLI wrapping, streaming, rate limits, process models
+5. `docs/multi-agent.md` — coordination, task dispatch, progress tracking
+6. `docs/dev-feedback-loop.md` — how to iterate on UI cheaply with Chrome DevTools MCP
