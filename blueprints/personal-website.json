@@ -31,7 +31,7 @@
   "scaffolding": {
     "stack": "Next.js 15 + Tailwind CSS 4 + TypeScript",
     "commands": [
-      "npx create-next-app@latest {project-name} --typescript --tailwind --app --src-dir --no-import-alias",
+      "npx --yes create-next-app@latest {project-name} --typescript --tailwind --app --src-dir --no-import-alias",
       "cd {project-name} && npm install"
     ],
     "postScaffold": [
@@ -69,9 +69,10 @@
       "dependsOn": ["Build content pages"]
     },
     {
-      "title": "Deploy to Vercel",
+      "title": "Preview and final QA",
       "assignTo": "frontend-engineer",
-      "dependsOn": ["Responsive design and polish"]
+      "dependsOn": ["Responsive design and polish"],
+      "note": "Run dev server silently, PM shows 'Preview' button. Deployment is an optional follow-up, not a default ticket."
     }
   ]
 }

@@ -162,6 +162,30 @@ One local directory per project. One local git repo. All Tweebs work in the same
 └── ...
 ```
 
+## Graceful Shutdown & Resume
+
+Users will close the app mid-project. This must not lose work.
+
+### On app close (Electron `before-quit`)
+1. Save PM session ID to SQLite (`projects.pm_session_id`)
+2. Send SIGTERM to all worker child processes
+3. Workers are instructed (via system prompt) to save progress and commit on SIGTERM
+4. Wait up to 5 seconds for graceful exit, then SIGKILL any remaining
+5. Record each Tweeb's last known status and current task in SQLite
+
+### On app reopen
+1. Check SQLite for active projects with incomplete tasks
+2. Resume PM session via `claude -p --resume {session-id}`
+3. PM re-evaluates: reads progress files, determines what's done and what needs re-dispatch
+4. Incomplete tasks get re-spawned with fresh worker processes
+5. User sees: "Welcome back. Picking up where we left off."
+
+### Data durability
+- SQLite survives app crashes (WAL mode, auto-checkpoint)
+- progress.json files are on disk — they survive process death
+- Local git commits survive everything — worst case, the code is safe
+- The PM's conversation history is preserved via session resumption
+
 ## Security Model
 
 - No API keys stored or transmitted — all auth is via CLI login (`claude auth`)

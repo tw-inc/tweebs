@@ -45,10 +45,15 @@
       "note": "Free to create. Gives you unlimited development stores for testing. No credit card needed.",
       "enrollUrl": "https://www.shopify.com/partners",
       "authFlow": [
-        "Create a Shopify Partners account at shopify.com/partners",
-        "Create a development store from the Partners dashboard",
-        "Run 'shopify auth login' to connect the CLI to your account",
-        "TWEEBS verifies auth with 'shopify auth status'"
+        "TWEEBS opens shopify.com/partners in the browser for account creation",
+        "User creates account and development store (guided by Shopify's own UI)",
+        "TWEEBS runs 'shopify auth login' as a background child process (stdio: pipe), extracts OAuth URL, opens it in the browser",
+        "User logs in via browser, redirected back automatically",
+        "TWEEBS verifies auth by running 'shopify auth status' in background"
+      ],
+      "userFacingSteps": [
+        "We'll open Shopify in your browser so you can create a free account.",
+        "Once you're set up there, come back and we'll connect everything automatically."
       ]
     }
   ],
