@@ -1,6 +1,7 @@
 import { app, BrowserWindow } from 'electron'
 import path from 'path'
 import { getDb, closeDb } from './db'
+import { registerAllHandlers } from './ipc'
 
 // Enable Chrome DevTools remote debugging for MCP
 app.commandLine.appendSwitch('remote-debugging-port', '9222')
@@ -40,6 +41,9 @@ function createWindow(): void {
 app.whenReady().then(() => {
   // Initialize database
   getDb()
+
+  // Register IPC handlers
+  registerAllHandlers()
 
   createWindow()
 

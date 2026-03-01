@@ -89,3 +89,303 @@ button, input, textarea, select {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* === Home View === */
+
+.home {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 52px 32px 32px;
+}
+
+.home-header {
+  margin-bottom: 24px;
+}
+
+.home-header h1 {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.project-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 120px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.project-card:hover {
+  background: var(--bg-hover);
+  border-color: var(--text-muted);
+}
+
+.new-project-card {
+  align-items: center;
+  justify-content: center;
+  border-style: dashed;
+  gap: 4px;
+}
+
+.new-project-icon {
+  font-size: 28px;
+  color: var(--text-muted);
+}
+
+.new-project-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.project-card-name {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.project-card-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.project-card-status {
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: auto;
+}
+
+.status-active { color: var(--accent); }
+.status-completed { color: var(--success); }
+.status-paused { color: var(--warning); }
+.status-archived { color: var(--text-muted); }
+
+.loading-text {
+  color: var(--text-secondary);
+  padding: 20px;
+}
+
+/* === New Project View === */
+
+.new-project {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 52px 32px 32px;
+}
+
+.new-project-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.new-project-header h2 {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+}
+
+.back-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.new-project-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 600px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.form-group input,
+.form-group textarea {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: var(--accent);
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.blueprint-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.blueprint-card {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.blueprint-card:hover {
+  border-color: var(--text-muted);
+}
+
+.blueprint-card.selected {
+  border-color: var(--accent);
+  background: var(--bg-tertiary);
+}
+
+.blueprint-icon {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.blueprint-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.blueprint-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.create-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+  align-self: flex-start;
+}
+
+.create-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.create-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* === Project View === */
+
+.project-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.project-view-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  padding-top: 40px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.project-view-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.project-view-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.project-view-chat {
+  width: 400px;
+  min-width: 320px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.project-view-board {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.placeholder-text {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.project-loading {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
